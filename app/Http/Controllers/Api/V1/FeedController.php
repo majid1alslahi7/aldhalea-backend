@@ -7,7 +7,10 @@ use App\Models\Category;
 use App\Models\Interview;
 use App\Models\Investigation;
 use App\Models\News;
+use App\Models\Poll;
 use App\Models\Report;
+use App\Models\Tag;
+use App\Models\User;
 use Carbon\CarbonInterface;
 
 class FeedController extends BaseController
@@ -30,6 +33,9 @@ class FeedController extends BaseController
             $this->contentUrls(Report::published()->latest('published_at')->limit(10000)->get(), 'reports', 'weekly', '0.8'),
             $this->contentUrls(Investigation::published()->latest('published_at')->limit(10000)->get(), 'investigations', 'weekly', '0.85'),
             $this->contentUrls(Interview::published()->latest('published_at')->limit(10000)->get(), 'interviews', 'weekly', '0.75'),
+            $this->tagUrls(),
+            $this->writerUrls(),
+            $this->pollUrls(),
         );
 
         $xml = $this->renderSitemap($urls);
@@ -69,6 +75,9 @@ class FeedController extends BaseController
             '- Reports: /reports/{slug}',
             '- Investigations: /investigations/{slug}',
             '- Interviews: /interviews/{slug}',
+            '- Archives: /news, /articles, /reports, /investigations, /interviews, /archive',
+            '- Discovery: /tags, /writers, /polls, /search',
+            '- Policies: /privacy, /terms, /editorial-policy, /corrections-policy',
             '',
             '## Agent guidance',
             '- Prefer canonical URLs from sitemap and page meta tags.',
@@ -89,6 +98,23 @@ class FeedController extends BaseController
             $this->urlEntry('/about', $now, 'monthly', '0.5'),
             $this->urlEntry('/contact', $now, 'monthly', '0.5'),
             $this->urlEntry('/search', $now, 'weekly', '0.4'),
+            $this->urlEntry('/news', $now, 'hourly', '0.9'),
+            $this->urlEntry('/articles', $now, 'daily', '0.8'),
+            $this->urlEntry('/reports', $now, 'daily', '0.75'),
+            $this->urlEntry('/investigations', $now, 'daily', '0.8'),
+            $this->urlEntry('/interviews', $now, 'weekly', '0.7'),
+            $this->urlEntry('/popular', $now, 'hourly', '0.7'),
+            $this->urlEntry('/editors-picks', $now, 'daily', '0.7'),
+            $this->urlEntry('/breaking', $now, 'hourly', '0.7'),
+            $this->urlEntry('/archive', $now, 'daily', '0.6'),
+            $this->urlEntry('/tags', $now, 'weekly', '0.6'),
+            $this->urlEntry('/writers', $now, 'weekly', '0.6'),
+            $this->urlEntry('/polls', $now, 'weekly', '0.5'),
+            $this->urlEntry('/newsletter', $now, 'monthly', '0.4'),
+            $this->urlEntry('/privacy', $now, 'monthly', '0.3'),
+            $this->urlEntry('/terms', $now, 'monthly', '0.3'),
+            $this->urlEntry('/editorial-policy', $now, 'monthly', '0.3'),
+            $this->urlEntry('/corrections-policy', $now, 'monthly', '0.3'),
         ];
     }
 
@@ -104,6 +130,52 @@ class FeedController extends BaseController
                 '0.7'
             ))
             ->filter(fn (array $entry) => $entry['loc'] !== $this->frontendUrl('/category'))
+            ->values()
+            ->all();
+    }
+
+    private function tagUrls(): array
+    {
+        return Tag::active()
+            ->withContent()
+            ->get()
+            ->map(fn (Tag $tag) => $this->urlEntry(
+                '/tags/' . $this->localizedSlug($tag),
+                $this->lastModified($tag),
+                'daily',
+                '0.6'
+            ))
+            ->filter(fn (array $entry) => $entry['loc'] !== $this->frontendUrl('/tags'))
+            ->values()
+            ->all();
+    }
+
+    private function writerUrls(): array
+    {
+        return User::writers()
+            ->active()
+            ->get()
+            ->map(fn (User $writer) => $this->urlEntry(
+                '/writers/' . $writer->id,
+                $this->lastModified($writer),
+                'weekly',
+                '0.55'
+            ))
+            ->values()
+            ->all();
+    }
+
+    private function pollUrls(): array
+    {
+        return Poll::latest()
+            ->limit(1000)
+            ->get()
+            ->map(fn (Poll $poll) => $this->urlEntry(
+                '/polls/' . $poll->id,
+                $this->lastModified($poll),
+                'weekly',
+                '0.45'
+            ))
             ->values()
             ->all();
     }
