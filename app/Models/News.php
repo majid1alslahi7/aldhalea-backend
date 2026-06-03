@@ -117,7 +117,12 @@ class News extends Model implements HasMedia
 
     public function scopeBreaking($query)
     {
-        return $query->where('status', 'breaking')
+        return $query->where(function ($q) {
+                         $q->where('status', 'breaking')
+                           ->orWhere('priority', 'breaking');
+                     })
+                     ->whereNotNull('published_at')
+                     ->where('published_at', '<=', now())
                      ->where(function($q) {
                          $q->whereNull('breaking_until')
                            ->orWhere('breaking_until', '>=', now());
@@ -317,11 +322,19 @@ class News extends Model implements HasMedia
     // ============ Attributes ============
     public function getMainImageUrlAttribute()
     {
+        if ($this->main_image && filter_var($this->main_image, FILTER_VALIDATE_URL)) {
+            return $this->main_image;
+        }
+
         return $this->main_image ? asset('storage/' . $this->main_image) : null;
     }
 
     public function getThumbnailUrlAttribute()
     {
+        if ($this->thumbnail && filter_var($this->thumbnail, FILTER_VALIDATE_URL)) {
+            return $this->thumbnail;
+        }
+
         return $this->thumbnail ? asset('storage/' . $this->thumbnail) : $this->main_image_url;
     }
 

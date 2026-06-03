@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             PollSeeder::class,
             CommentSeeder::class,
             BreakingNewsSeeder::class,
+            ExpandedRealContentSeeder::class,
         ]);
     }
 }

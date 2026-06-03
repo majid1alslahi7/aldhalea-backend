@@ -144,6 +144,10 @@ class Article extends Model
     // ============ Attributes ============
     public function getFeaturedImageUrlAttribute()
     {
+        if ($this->featured_image && filter_var($this->featured_image, FILTER_VALIDATE_URL)) {
+            return $this->featured_image;
+        }
+
         return $this->featured_image ? asset('storage/' . $this->featured_image) : null;
     }
 
