@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\CitizenReportController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\NewsletterController;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\SettingController;
 use App\Http\Controllers\Api\V1\BreakingNewsController;
@@ -139,6 +140,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/featured', [PollController::class, 'featured']);
         Route::get('/{id}', [PollController::class, 'show']);
         Route::get('/{id}/results', [PollController::class, 'results']);
+        Route::post('/{id}/vote', [PollController::class, 'vote'])->middleware('throttle:10,1');
     });
 
     // --- البحث ---
@@ -163,6 +165,9 @@ Route::prefix('v1')->group(function () {
     // --- النشرة البريدية ---
     Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe']);
     Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe']);
+
+    // --- التواصل ---
+    Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1');
 });
 
 // ==================== مسارات المستخدم (تسجيل دخول مطلوب) ====================
@@ -187,9 +192,6 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 
     // --- المشاركات ---
     Route::post('/shares', [ShareController::class, 'store']);
-
-    // --- استطلاعات الرأي ---
-    Route::post('/polls/{id}/vote', [PollController::class, 'vote']);
 
     // --- تقارير المواطن ---
     Route::prefix('citizen-reports')->group(function () {

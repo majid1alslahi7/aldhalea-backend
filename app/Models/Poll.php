@@ -31,7 +31,9 @@ class Poll extends Model
 
     public function scopeActive($query) {
         return $query->where('status', 'active')
-                     ->where('starts_at', '<=', now())
+                     ->where(function($q) {
+                         $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+                     })
                      ->where(function($q) {
                          $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
                      });
@@ -39,9 +41,11 @@ class Poll extends Model
     public function scopeFeatured($query) { return $query->where('is_featured', true); }
     public function scopeRecent($query) { return $query->latest(); }
 
-    public function getTotalVotesAttribute() { return $this->votes()->count(); }
+    public function getTotalVotesAttribute() { return (int) $this->options()->sum('votes_count'); }
     public function getIsActiveAttribute() {
-        return $this->status === 'active' && $this->starts_at <= now() && (!$this->ends_at || $this->ends_at >= now());
+        return $this->status === 'active'
+            && (!$this->starts_at || $this->starts_at <= now())
+            && (!$this->ends_at || $this->ends_at >= now());
     }
     public function hasUserVoted($userId) { return $this->votes()->where('user_id', $userId)->exists(); }
 }

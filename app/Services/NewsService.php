@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\News;
 use App\Models\Category;
+use App\Support\LocalizedSlug;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class NewsService
 {
@@ -15,8 +15,8 @@ class NewsService
     public function create(array $data, $user): News
     {
         // إنشاء slug
-        $slugAr = Str::slug($data['title']['ar']);
-        $slugEn = isset($data['title']['en']) ? Str::slug($data['title']['en']) : null;
+        $slugAr = LocalizedSlug::make($data['title']['ar']);
+        $slugEn = isset($data['title']['en']) ? LocalizedSlug::make($data['title']['en'], $data['title']['ar']) : null;
 
         // التأكد من تفرد الـ slug
         $originalSlugAr = $slugAr;
@@ -90,7 +90,7 @@ class NewsService
     {
         // تحديث slug إذا تغير العنوان
         if (isset($data['title'])) {
-            $slugAr = Str::slug($data['title']['ar']);
+            $slugAr = LocalizedSlug::make($data['title']['ar']);
             if ($slugAr !== ($news->getTranslation('slug', 'ar') ?? '')) {
                 $originalSlugAr = $slugAr;
                 $counter = 1;
@@ -98,7 +98,10 @@ class NewsService
                     $slugAr = $originalSlugAr . '-' . $counter;
                     $counter++;
                 }
-                $data['slug'] = ['ar' => $slugAr, 'en' => $data['title']['en'] ? Str::slug($data['title']['en']) : null];
+                $data['slug'] = [
+                    'ar' => $slugAr,
+                    'en' => !empty($data['title']['en']) ? LocalizedSlug::make($data['title']['en'], $data['title']['ar']) : null,
+                ];
             }
         }
 

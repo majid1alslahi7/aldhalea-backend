@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Article;
 use App\Http\Resources\ArticleResource;
+use App\Support\LocalizedSlug;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -20,7 +21,7 @@ class ArticleController extends BaseController
 
         $articles = $query->latest('published_at')->paginate($request->get('per_page', 12));
 
-        return $this->paginatedResponse($articles);
+        return $this->paginatedResponse($articles, null, ArticleResource::class);
     }
 
     public function opinions(Request $request)
@@ -65,7 +66,7 @@ class ArticleController extends BaseController
     public function byWriter($writerId)
     {
         $articles = Article::published()->byWriter($writerId)->with('category')->latest()->paginate(12);
-        return $this->paginatedResponse($articles);
+        return $this->paginatedResponse($articles, null, ArticleResource::class);
     }
 
     public function show($slug)
@@ -99,21 +100,31 @@ class ArticleController extends BaseController
     {
         $validated = $request->validate([
             'title.ar' => 'required|string|max:255',
+            'title.en' => 'nullable|string|max:255',
             'content.ar' => 'required|string',
+            'content.en' => 'nullable|string',
             'category_id' => 'nullable|exists:categories,id',
             'status' => 'required|in:draft,pending,published',
             'type' => 'nullable|in:opinion,analysis,blog,column,feature',
+            'priority' => 'nullable|in:normal,featured,editors_pick,trending',
             'tags' => 'nullable|array',
+            'tags.*' => 'integer|exists:tags,id',
             'featured_image' => 'nullable|image|max:5120',
         ]);
 
+        $tags = $validated['tags'] ?? [];
+        unset($validated['tags'], $validated['featured_image']);
+
         $article = Article::create(array_merge($validated, [
             'writer_id' => $request->user()->id,
-            'slug' => ['ar' => \Str::slug($validated['title']['ar'])],
+            'slug' => [
+                'ar' => LocalizedSlug::make($validated['title']['ar']),
+                'en' => !empty($validated['title']['en']) ? LocalizedSlug::make($validated['title']['en']) : null,
+            ],
             'published_at' => $validated['status'] === 'published' ? now() : null,
         ]));
 
-        if (!empty($validated['tags'])) $article->tags()->sync($validated['tags']);
+        if ($tags !== []) $article->tags()->sync($tags);
         if ($request->hasFile('featured_image')) $article->addMediaFromRequest('featured_image')->toMediaCollection('featured');
 
         return $this->createdResponse(new ArticleResource($article));
@@ -124,8 +135,41 @@ class ArticleController extends BaseController
         $article = Article::find($id);
         if (!$article) return $this->notFoundResponse();
 
-        $article->update($request->all());
-        if ($request->has('tags')) $article->tags()->sync($request->tags);
+        $validated = $request->validate([
+            'title.ar' => 'sometimes|required|string|max:255',
+            'title.en' => 'nullable|string|max:255',
+            'subtitle.ar' => 'nullable|string|max:255',
+            'subtitle.en' => 'nullable|string|max:255',
+            'content.ar' => 'sometimes|required|string',
+            'content.en' => 'nullable|string',
+            'excerpt.ar' => 'nullable|string|max:500',
+            'excerpt.en' => 'nullable|string|max:500',
+            'category_id' => 'nullable|exists:categories,id',
+            'status' => 'sometimes|in:draft,pending,published',
+            'type' => 'nullable|in:opinion,analysis,blog,column,feature',
+            'priority' => 'nullable|in:normal,featured,editors_pick,trending',
+            'tags' => 'nullable|array',
+            'tags.*' => 'integer|exists:tags,id',
+            'allow_comments' => 'boolean',
+            'is_sponsored' => 'boolean',
+        ]);
+
+        $tags = $validated['tags'] ?? null;
+        unset($validated['tags']);
+
+        if (isset($validated['title']['ar'])) {
+            $validated['slug'] = [
+                'ar' => LocalizedSlug::make($validated['title']['ar']),
+                'en' => !empty($validated['title']['en']) ? LocalizedSlug::make($validated['title']['en']) : null,
+            ];
+        }
+
+        if (($validated['status'] ?? null) === 'published' && !$article->published_at) {
+            $validated['published_at'] = now();
+        }
+
+        $article->update($validated);
+        if ($tags !== null) $article->tags()->sync($tags);
 
         return $this->updatedResponse(new ArticleResource($article));
     }

@@ -5,8 +5,8 @@ namespace Database\Seeders;
 use App\Models\Investigation;
 use App\Models\Category;
 use App\Models\User;
+use App\Support\LocalizedSlug;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class InvestigationSeeder extends Seeder
 {
@@ -24,9 +24,9 @@ class InvestigationSeeder extends Seeder
         ];
 
         foreach ($investigations as $item) {
-            $slug = Str::slug($item['title']['ar']);
+            $slug = LocalizedSlug::make($item['title']['ar']);
             Investigation::create(array_merge($item, [
-                'slug' => ['ar' => $slug, 'en' => Str::slug($item['title']['en'] ?? '')],
+                'slug' => ['ar' => $slug, 'en' => LocalizedSlug::make($item['title']['en'] ?? '', $item['title']['ar'])],
                 'category_id' => $categories->random()->id,
                 'user_id' => $users->random()->id,
                 'status' => 'published',

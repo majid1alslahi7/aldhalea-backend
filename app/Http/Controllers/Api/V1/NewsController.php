@@ -43,7 +43,7 @@ class NewsController extends BaseController
         $perPage = min((int) $request->get('per_page', 15), 50);
         $news = $query->paginate($perPage);
 
-        return $this->paginatedResponse($news, 'تم جلب الأخبار بنجاح');
+        return $this->paginatedResponse($news, 'تم جلب الأخبار بنجاح', NewsResource::class);
     }
 
     /**
@@ -168,7 +168,7 @@ class NewsController extends BaseController
                     ->latest('published_at')
                     ->paginate(15);
 
-        return $this->paginatedResponse($news, 'أخبار الضالع');
+        return $this->paginatedResponse($news, 'أخبار الضالع', NewsResource::class);
     }
 
     /**
@@ -196,7 +196,7 @@ class NewsController extends BaseController
                     ->with(['category', 'tags'])
                     ->paginate(20);
 
-        return $this->paginatedResponse($news);
+        return $this->paginatedResponse($news, null, NewsResource::class);
     }
 
     /**
@@ -210,7 +210,7 @@ class NewsController extends BaseController
                     ->latest('published_at')
                     ->paginate(20);
 
-        return $this->paginatedResponse($news, "أخبار تاريخ {$date}");
+        return $this->paginatedResponse($news, "أخبار تاريخ {$date}", NewsResource::class);
     }
 
     /**
@@ -251,7 +251,7 @@ class NewsController extends BaseController
         $news = $this->newsService->create($request->validated(), $request->user());
 
         // مسح الكاش
-        Cache::tags(['news', 'categories'])->flush();
+        $this->flushContentCache(['news', 'categories']);
 
         return $this->createdResponse(new NewsResource($news), 'تم نشر الخبر بنجاح');
     }
@@ -270,7 +270,7 @@ class NewsController extends BaseController
 
         $news = $this->newsService->update($news, $request->validated());
 
-        Cache::tags(['news'])->flush();
+        $this->flushContentCache(['news']);
 
         return $this->updatedResponse(new NewsResource($news), 'تم تحديث الخبر بنجاح');
     }
@@ -288,7 +288,7 @@ class NewsController extends BaseController
         $this->authorize('delete', $news);
         $news->delete();
 
-        Cache::tags(['news'])->flush();
+        $this->flushContentCache(['news']);
 
         return $this->deletedResponse('تم حذف الخبر بنجاح');
     }
@@ -310,7 +310,7 @@ class NewsController extends BaseController
             'published_at' => $request->status === 'published' ? now() : $news->published_at,
         ]);
 
-        Cache::tags(['news'])->flush();
+        $this->flushContentCache(['news']);
 
         return $this->updatedResponse(new NewsResource($news), 'تم تحديث الحالة');
     }

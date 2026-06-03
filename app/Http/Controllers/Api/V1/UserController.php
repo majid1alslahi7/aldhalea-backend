@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\User;
+use App\Http\Resources\ArticleResource;
 use Illuminate\Http\Request;
 
 class UserController extends BaseController
@@ -29,7 +30,7 @@ class UserController extends BaseController
     public function writerArticles($id)
     {
         $articles = \App\Models\Article::published()->byWriter($id)->with('category')->latest()->paginate(12);
-        return $this->paginatedResponse($articles);
+        return $this->paginatedResponse($articles, null, ArticleResource::class);
     }
 
     public function preferences(Request $request) { return $this->successResponse($request->user()->preferences); }

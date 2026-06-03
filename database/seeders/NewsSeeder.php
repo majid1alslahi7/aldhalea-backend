@@ -6,8 +6,8 @@ use App\Models\News;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
+use App\Support\LocalizedSlug;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class NewsSeeder extends Seeder
 {
@@ -112,9 +112,9 @@ class NewsSeeder extends Seeder
         ];
 
         foreach ($newsItems as $item) {
-            $slug = Str::slug($item['title']['ar']);
+            $slug = LocalizedSlug::make($item['title']['ar']);
             $news = News::create(array_merge($item, [
-                'slug' => ['ar' => $slug, 'en' => Str::slug($item['title']['en'] ?? '')],
+                'slug' => ['ar' => $slug, 'en' => LocalizedSlug::make($item['title']['en'] ?? '', $item['title']['ar'])],
                 'category_id' => $categories->random()->id,
                 'user_id' => $writers->random()->id,
                 'writer_id' => $writers->random()->id,

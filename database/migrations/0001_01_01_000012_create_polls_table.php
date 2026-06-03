@@ -18,7 +18,7 @@ return new class extends Migration
             $table->boolean('show_results')->default(true);
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });

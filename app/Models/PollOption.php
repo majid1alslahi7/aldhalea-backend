@@ -19,8 +19,10 @@ class PollOption extends Model
 
     public function getPercentageAttribute()
     {
-        return $this->poll->total_votes > 0
-            ? round(($this->votes_count / $this->poll->total_votes) * 100, 1)
+        $totalVotes = $this->poll?->total_votes ?? 0;
+
+        return $totalVotes > 0
+            ? round(($this->votes_count / $totalVotes) * 100, 1)
             : 0;
     }
 }

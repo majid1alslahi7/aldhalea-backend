@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\News;
 use App\Models\Article;
-use App\Models\Report;
 use App\Models\SearchLog;
 use App\Http\Resources\NewsResource;
 use App\Http\Resources\ArticleResource;
@@ -14,16 +13,15 @@ class SearchController extends BaseController
 {
     public function index(Request $request)
     {
-        $query = $request->get('q');
-        $type = $request->get('type', 'all'); // all, news, articles, reports
-        $perPage = $request->get('per_page', 15);
+        $validated = $request->validate([
+            'q' => 'required|string|min:2|max:120',
+            'type' => 'nullable|in:all,news,articles',
+            'per_page' => 'nullable|integer|min:1|max:30',
+        ]);
 
-        if (!$query) {
-            return $this->errorResponse('يرجى إدخال كلمة البحث');
-        }
-
-        // تسجيل البحث
-        $this->logSearch($query, $request);
+        $query = trim($validated['q']);
+        $type = $validated['type'] ?? 'all';
+        $perPage = $validated['per_page'] ?? 15;
 
         $results = collect();
 
@@ -43,6 +41,8 @@ class SearchController extends BaseController
             ]));
         }
 
+        $this->logSearch($query, $request, $results->count());
+
         return $this->successResponse([
             'query' => $query,
             'total' => $results->count(),
@@ -52,8 +52,8 @@ class SearchController extends BaseController
 
     public function suggestions(Request $request)
     {
-        $query = $request->get('q');
-        if (!$query || strlen($query) < 2) {
+        $query = trim((string) $request->get('q'));
+        if (mb_strlen($query) < 2 || mb_strlen($query) > 120) {
             return $this->successResponse([]);
         }
 
@@ -71,14 +71,14 @@ class SearchController extends BaseController
         return $this->successResponse($trending);
     }
 
-    private function logSearch($query, $request)
+    private function logSearch($query, $request, int $resultsCount): void
     {
         SearchLog::create([
             'query' => $query,
             'user_id' => $request->user()?->id,
-            'results_count' => 0,
+            'results_count' => $resultsCount,
             'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 500),
             'filters' => $request->except(['q', 'page']),
         ]);
     }

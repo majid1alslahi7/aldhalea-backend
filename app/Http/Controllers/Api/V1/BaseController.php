@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 
 class BaseController extends Controller
 {
@@ -54,12 +55,21 @@ class BaseController extends Controller
     /**
      * نجاح مع Pagination
      */
-    protected function paginatedResponse(LengthAwarePaginator $paginator, string $message = null): JsonResponse
+    protected function paginatedResponse(
+        LengthAwarePaginator $paginator,
+        string $message = null,
+        ?string $resourceClass = null
+    ): JsonResponse
     {
+        $items = $paginator->getCollection()->values();
+        $data = $resourceClass && is_a($resourceClass, JsonResource::class, true)
+            ? $resourceClass::collection($items)->resolve(request())
+            : $items;
+
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $paginator->items(),
+            'data' => $data,
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -76,6 +86,23 @@ class BaseController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * مسح كاش متوافق مع مخازن لا تدعم cache tags مثل database/file.
+     */
+    protected function flushContentCache(array $tags = []): void
+    {
+        try {
+            if ($tags !== []) {
+                Cache::tags($tags)->flush();
+                return;
+            }
+
+            Cache::flush();
+        } catch (\Throwable) {
+            Cache::flush();
+        }
     }
 
     /**

@@ -5,8 +5,8 @@ namespace Database\Seeders;
 use App\Models\Article;
 use App\Models\Tag;
 use App\Models\User;
+use App\Support\LocalizedSlug;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class ArticleSeeder extends Seeder
 {
@@ -67,9 +67,9 @@ class ArticleSeeder extends Seeder
         ];
 
         foreach ($articles as $item) {
-            $slug = Str::slug($item['title']['ar']);
+            $slug = LocalizedSlug::make($item['title']['ar']);
             $article = Article::create(array_merge($item, [
-                'slug' => ['ar' => $slug, 'en' => Str::slug($item['title']['en'] ?? '')],
+                'slug' => ['ar' => $slug, 'en' => LocalizedSlug::make($item['title']['en'] ?? '', $item['title']['ar'])],
                 'writer_id' => $writers->random()->id,
                 'status' => 'published',
                 'views_count' => rand(50, 3000),
