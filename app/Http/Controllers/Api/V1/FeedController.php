@@ -158,7 +158,7 @@ class FeedController extends BaseController
 
     private function frontendUrl(string $path): string
     {
-        $base = rtrim(env('FRONTEND_URL') ?: env('APP_FRONTEND_URL') ?: env('SITE_URL') ?: config('app.url'), '/');
+        $base = rtrim(env('FRONTEND_URL') ?: env('APP_FRONTEND_URL') ?: env('SITE_URL') ?: $this->derivedFrontendUrl(), '/');
         $trimmed = trim($path, '/');
 
         if ($trimmed === '') {
@@ -170,6 +170,17 @@ class FeedController extends BaseController
             ->implode('/');
 
         return $base . '/' . $encoded;
+    }
+
+    private function derivedFrontendUrl(): string
+    {
+        $requestBase = request()->getSchemeAndHttpHost();
+
+        if (str_contains($requestBase, 'backend')) {
+            return str_replace('backend', 'frontend', $requestBase);
+        }
+
+        return config('app.url');
     }
 
     private function localizedSlug($model): string
