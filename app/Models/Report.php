@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Translatable\HasTranslations;
+
+class Report extends Model
+{
+    use SoftDeletes, HasTranslations;
+
+    public $translatable = ['title', 'slug', 'subtitle', 'content', 'excerpt', 'meta_title', 'meta_description'];
+
+    protected $fillable = [
+        'title', 'slug', 'subtitle', 'content', 'excerpt',
+        'main_image', 'thumbnail', 'featured_video', 'gallery',
+        'category_id', 'user_id', 'editor_id',
+        'status', 'type', 'priority',
+        'meta_title', 'meta_description', 'meta_keywords',
+        'location', 'latitude', 'longitude',
+        'source_name', 'source_url',
+        'views_count', 'shares_count', 'comments_count', 'likes_count', 'reading_time',
+        'allow_comments', 'published_at',
+    ];
+
+    protected $casts = [
+        'title' => 'array', 'slug' => 'array', 'content' => 'array',
+        'excerpt' => 'array', 'gallery' => 'array',
+        'meta_title' => 'array', 'meta_description' => 'array',
+        'latitude' => 'decimal:7', 'longitude' => 'decimal:7',
+        'published_at' => 'datetime', 'allow_comments' => 'boolean',
+    ];
+
+    public function category() { return $this->belongsTo(Category::class); }
+    public function user() { return $this->belongsTo(User::class); }
+    public function editor() { return $this->belongsTo(User::class, 'editor_id'); }
+    public function comments() { return $this->morphMany(Comment::class, 'commentable'); }
+    public function likes() { return $this->morphMany(Like::class, 'likeable'); }
+    public function shares() { return $this->morphMany(Share::class, 'shareable'); }
+
+    public function scopePublished($query) { return $query->where('status', 'published')->where('published_at', '<=', now()); }
+    public function scopeByType($query, $type) { return $query->where('type', $type); }
+    public function scopePhotoReports($query) { return $query->where('type', 'photo'); }
+    public function scopeVideoReports($query) { return $query->where('type', 'video'); }
+    public function scopeFeatured($query) { return $query->where('priority', 'featured'); }
+    public function scopePopular($query) { return $query->orderBy('views_count', 'desc'); }
+    public function scopeRecent($query) { return $query->published()->latest('published_at'); }
+    public function scopeSearch($query, $term) {
+        return $query->where('title->ar', 'LIKE', "%{$term}%")
+                     ->orWhere('content->ar', 'LIKE', "%{$term}%");
+    }
+
+    public function getMainImageUrlAttribute() { return $this->main_image ? asset('storage/' . $this->main_image) : null; }
+    public function getUrlAttribute() {
+        $slug = $this->getTranslation('slug', app()->getLocale()) ?? $this->getTranslation('slug', 'ar');
+        return url("/reports/{$slug}");
+    }
+}
