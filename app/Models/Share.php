@@ -6,7 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Share extends Model
 {
-    protected $fillable = ['user_id', 'shareable_type', 'shareable_id', 'platform', 'ip_address'];
+    protected $fillable = [
+        'user_id',
+        'shareable_type',
+        'shareable_id',
+        'platform',
+        'url',
+        'ip_address',
+        'referer',
+        'user_agent',
+    ];
 
     public function shareable() { return $this->morphTo(); }
     public function user() { return $this->belongsTo(User::class); }

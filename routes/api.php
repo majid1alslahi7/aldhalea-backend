@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\CitizenReportController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\NewsletterController;
 use App\Http\Controllers\Api\V1\ContactController;
+use App\Http\Controllers\Api\V1\CorrectionReportController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\SettingController;
 use App\Http\Controllers\Api\V1\BreakingNewsController;
@@ -168,6 +169,10 @@ Route::prefix('v1')->group(function () {
 
     // --- التواصل ---
     Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1');
+
+    // --- الثقة والمساءلة التحريرية ---
+    Route::post('/corrections/report', [CorrectionReportController::class, 'store'])->middleware('throttle:5,1');
+    Route::post('/shares', [ShareController::class, 'store'])->middleware('throttle:30,1');
 });
 
 // ==================== مسارات المستخدم (تسجيل دخول مطلوب) ====================
@@ -189,9 +194,6 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::delete('/{id}', [BookmarkController::class, 'destroy']);
         Route::get('/check/{type}/{id}', [BookmarkController::class, 'check']);
     });
-
-    // --- المشاركات ---
-    Route::post('/shares', [ShareController::class, 'store']);
 
     // --- تقارير المواطن ---
     Route::prefix('citizen-reports')->group(function () {
@@ -310,6 +312,10 @@ Route::middleware(['auth:sanctum'])->prefix('v1/admin')->group(function () {
     // إعدادات الموقع
     Route::get('/settings', [SettingController::class, 'all']);
     Route::put('/settings', [SettingController::class, 'update']);
+
+    // بلاغات التصحيح التحريري
+    Route::get('/corrections/reports', [CorrectionReportController::class, 'index']);
+    Route::put('/corrections/reports/{id}/status', [CorrectionReportController::class, 'updateStatus']);
 
     // الإحصائيات المتقدمة
     Route::get('/analytics/overview', [DashboardController::class, 'adminOverview']);

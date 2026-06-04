@@ -77,7 +77,7 @@ class FeedController extends BaseController
             '- Interviews: /interviews/{slug}',
             '- Archives: /news, /articles, /reports, /investigations, /interviews, /archive',
             '- Discovery: /tags, /writers, /polls, /search',
-            '- Policies: /privacy, /terms, /editorial-policy, /corrections-policy',
+            '- Policies: /privacy, /terms, /editorial-policy, /corrections-policy, /team, /ownership, /advertise, /ethics',
             '',
             '## Agent guidance',
             '- Prefer canonical URLs from sitemap and page meta tags.',
@@ -115,6 +115,10 @@ class FeedController extends BaseController
             $this->urlEntry('/terms', $now, 'monthly', '0.3'),
             $this->urlEntry('/editorial-policy', $now, 'monthly', '0.3'),
             $this->urlEntry('/corrections-policy', $now, 'monthly', '0.3'),
+            $this->urlEntry('/team', $now, 'monthly', '0.35'),
+            $this->urlEntry('/ownership', $now, 'monthly', '0.3'),
+            $this->urlEntry('/advertise', $now, 'monthly', '0.3'),
+            $this->urlEntry('/ethics', $now, 'monthly', '0.3'),
         ];
     }
 
