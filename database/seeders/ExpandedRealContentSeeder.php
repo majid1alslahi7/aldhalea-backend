@@ -28,6 +28,7 @@ class ExpandedRealContentSeeder extends Seeder
         'sports' => 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
         'tech' => 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
         'culture' => 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=1200&q=80',
+        'wilayahGhadir' => '/news/wilayah-ghadir-aldhalea.jpg',
         'default' => 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80',
     ];
 
@@ -75,10 +76,10 @@ class ExpandedRealContentSeeder extends Seeder
             'title' => ['ar' => $item['title'], 'en' => $item['title_en'] ?? $item['title']],
             'slug' => ['ar' => $slug, 'en' => LocalizedSlug::make($item['title_en'] ?? $item['title'], $item['title'])],
             'subtitle' => ['ar' => $item['subtitle'] ?? '', 'en' => $item['subtitle_en'] ?? ($item['subtitle'] ?? '')],
-            'content' => $this->content($item['lead'], $item['points'], $item['closing'] ?? null, $item['source_name'], $item['source_url']),
+            'content' => $this->content($item['lead'], $item['points'], $item['closing'] ?? null, $item['source_name'], $item['source_url'], $item['body_format'] ?? 'list'),
             'excerpt' => ['ar' => $item['excerpt'], 'en' => $item['excerpt_en'] ?? $item['excerpt']],
-            'main_image' => self::IMAGES[$item['image'] ?? 'default'] ?? self::IMAGES['default'],
-            'thumbnail' => self::IMAGES[$item['image'] ?? 'default'] ?? self::IMAGES['default'],
+            'main_image' => $this->image($item['image'] ?? 'default'),
+            'thumbnail' => $this->image($item['image'] ?? 'default'),
             'category_id' => $category->id,
             'user_id' => $admin->id,
             'writer_id' => $writer->id,
@@ -126,8 +127,8 @@ class ExpandedRealContentSeeder extends Seeder
             'subtitle' => ['ar' => $item['subtitle'] ?? '', 'en' => $item['subtitle_en'] ?? ($item['subtitle'] ?? '')],
             'content' => $this->content($item['lead'], $item['points'], $item['closing'] ?? null, $item['source_name'], $item['source_url']),
             'excerpt' => ['ar' => $item['excerpt'], 'en' => $item['excerpt_en'] ?? $item['excerpt']],
-            'featured_image' => self::IMAGES[$item['image'] ?? 'default'] ?? self::IMAGES['default'],
-            'thumbnail' => self::IMAGES[$item['image'] ?? 'default'] ?? self::IMAGES['default'],
+            'featured_image' => $this->image($item['image'] ?? 'default'),
+            'thumbnail' => $this->image($item['image'] ?? 'default'),
             'category_id' => $category?->id,
             'writer_id' => $writer->id,
             'status' => 'published',
@@ -169,8 +170,8 @@ class ExpandedRealContentSeeder extends Seeder
             'slug' => ['ar' => $slug, 'en' => LocalizedSlug::make($item['title_en'] ?? $item['title'], $item['title'])],
             'content' => $this->content($item['lead'], $item['points'], $item['closing'] ?? null, $item['source_name'], $item['source_url']),
             'excerpt' => ['ar' => $item['excerpt'], 'en' => $item['excerpt_en'] ?? $item['excerpt']],
-            'main_image' => self::IMAGES[$item['image'] ?? 'default'] ?? self::IMAGES['default'],
-            'thumbnail' => self::IMAGES[$item['image'] ?? 'default'] ?? self::IMAGES['default'],
+            'main_image' => $this->image($item['image'] ?? 'default'),
+            'thumbnail' => $this->image($item['image'] ?? 'default'),
             'category_id' => $category->id,
             'user_id' => $admin->id,
             'status' => 'published',
@@ -196,16 +197,23 @@ class ExpandedRealContentSeeder extends Seeder
         }
     }
 
-    private function content(string $lead, array $points, ?string $closing, string $sourceName, string $sourceUrl): array
+    private function content(string $lead, array $points, ?string $closing, string $sourceName, string $sourceUrl, string $bodyFormat = 'list'): array
     {
         $html = '<p>' . $this->escape($lead) . '</p>';
-        $html .= '<ul>';
 
-        foreach ($points as $point) {
-            $html .= '<li>' . $this->escape($point) . '</li>';
+        if ($bodyFormat === 'paragraphs') {
+            foreach ($points as $point) {
+                $html .= '<p>' . $this->escape($point) . '</p>';
+            }
+        } else {
+            $html .= '<ul>';
+
+            foreach ($points as $point) {
+                $html .= '<li>' . $this->escape($point) . '</li>';
+            }
+
+            $html .= '</ul>';
         }
-
-        $html .= '</ul>';
 
         if ($closing) {
             $html .= '<p>' . $this->escape($closing) . '</p>';
@@ -214,6 +222,19 @@ class ExpandedRealContentSeeder extends Seeder
         $html .= '<p><strong>مصدر المعلومات:</strong> ' . $this->escape($sourceName) . ' - ' . $this->escape($sourceUrl) . '</p>';
 
         return ['ar' => $html, 'en' => strip_tags($html)];
+    }
+
+    private function image(string $key): string
+    {
+        $image = self::IMAGES[$key] ?? self::IMAGES['default'];
+
+        if (str_starts_with($image, '/')) {
+            $base = rtrim(env('BACKEND_URL') ?: env('APP_BACKEND_URL') ?: env('APP_URL') ?: config('app.url'), '/');
+
+            return $base . $image;
+        }
+
+        return $image;
     }
 
     private function escape(string $value): string
@@ -259,6 +280,32 @@ class ExpandedRealContentSeeder extends Seeder
     private function newsItems(): array
     {
         return [
+            [
+                'category' => 'اخبار-محلية',
+                'title' => 'مهرجانات وفعاليات في الضالع بذكرى يوم الولاية "عيد الغدير"',
+                'title_en' => 'Festivals and events in Dhale mark Wilayah Day Eid Al Ghadir',
+                'subtitle' => 'فعاليات خطابية وشعبية في دمت وقعطبة وجبن والحشاء',
+                'excerpt' => 'نُظمت في مديريات دمت وقعطبة وجبن والحشاء في محافظة الضالع اليوم، مهرجانات شعبية وفعاليات خطابية، بذكرى يوم الولاية، تحت شعار "من كنت مولاه فهذا علي مولاه".',
+                'lead' => 'نُظمت في مديريات دمت وقعطبة وجبن والحشاء في محافظة الضالع اليوم، مهرجانات شعبية وفعاليات خطابية، بذكرى يوم الولاية، تحت شعار "من كنت مولاه فهذا علي مولاه".',
+                'points' => [
+                    'وأكدت المهرجانات والفعاليات، التي تقدمها في دمت القائم بأعمال محافظ الضالع عبداللطيف الشغدري ونائب وزير الخدمة المدنية والتطوير الإداري أنس سنان ومسؤول التعبئة بالمحافظة أحمد المراني، عمق المحبة والولاء لله ورسوله والإمام علي وأعلام الهدى.',
+                    'وعبرت عن مدى إرتباط اليمنيين بهويتهم الإيمانية ومبدأ الولاية الذي أطلقه الرسول الأعظم بتوجيه من الله عز وجل، لافتة إلى أهمية الولاية وما تحقق من عزة وكرامة ونصر، وتحرر من الوصاية الأجنبية والهيمنة الخارجية، ومواجهة قوى الاستكبار العالمي.',
+                    'وأكدت أهمية إحياء الذكرى لترسيخ مبدأ الولاية والاقتداء بسيرة الإمام علي عليه السلام، مستعرضة العلاقة الوطيدة التي تربط اليمنيين بالإمام علي كرّم الله وجهه، وإيمانهم العميق بولايته التي أعلنها النبي صلى الله عليه وآله وسلم في يوم "غدير خم".',
+                    'وتطرقت فقرات المهرجانات والفعاليات إلى فضائل الإمام علي عليه السلام ومواقفه في دعم الحق والوقوف ضد الظلم، وترسيخ ثقافة الجهاد والاستشهاد إنطلاقًا من كتاب الله الكريم والرسالة المحمدية.',
+                    'وجدّدت التأكيد على أهمية التمسك بولاية الإمام علي عليه السلام والسير على الدرب الذي رسمه الله ورسوله بمبدأ التولي لله ورسوله وأعلام الهدى من آل بيت النبي عليهم السلام، مؤكدة ضرورة التولّي الصادق والمخلص لله ورسوله والإمام علي عليه السلام، الذي يعد الضمانة الحقيقية لصون كرامة الأمة وعزتها.',
+                    'وتخللت المهرجانات والفعاليات قصائد شعرية وأهازيج شعبية عبرت عن أهمية الذكرى.',
+                ],
+                'source_name' => 'مراسل الضالع أونلاين',
+                'source_url' => '/news/مهرجانات-وفعاليات-في-الضالع-بذكرى-يوم-الولاية-عيد-الغدير',
+                'published_at' => '2026-06-04 12:00:00',
+                'location' => 'دمت وقعطبة وجبن والحشاء - الضالع',
+                'city' => 'الضالع',
+                'image' => 'wilayahGhadir',
+                'priority' => 'featured',
+                'tags' => ['الضالع', 'أخبار محلية', 'يوم الولاية', 'عيد الغدير', 'فعاليات شعبية'],
+                'reading_time' => 5,
+                'body_format' => 'paragraphs',
+            ],
             [
                 'category' => 'اخبار-محلية',
                 'title' => 'مشروع طاقة شمسية يعزز ضخ المياه في قرى حجر وسناح بالضالع',
